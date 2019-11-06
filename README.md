@@ -28,7 +28,7 @@ the states.
 * If you have written a `CEMOptimizer` class, in this question, you should write another `RandomOptimizer` class.
 
 ### Q1.2.2
-* Running time of this question for the TAs: 6 hours
+* Running time of this question for the TAs: 30 minutes
 
 ### Q1.2.7
 * Read though all the questions before you start running this experiment:)
