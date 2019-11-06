@@ -4,6 +4,12 @@ import numpy as np
 import gym
 import copy
 
+from agent import Agent, RandomPolicy, CEMPolicy
+import ipdb
+
+INITIAL_MU = 0
+INITIAL_SIGMA = 0.5
+
 
 class MPC:
     def __init__(self, env, plan_horizon, model, popsize, num_elites, max_iters,
@@ -25,6 +31,8 @@ class MPC:
         :param use_random_optimizer: Whether to use CEM or take random actions
         """
         self.env = env
+        action_dim = len(env.action_space.low)
+        state_dim = len(env.observation_space.low)
         self.use_gt_dynamics, self.use_mpc, self.use_random_optimizer = use_gt_dynamics, use_mpc, use_random_optimizer
         self.num_particles = num_particles
         self.plan_horizon = plan_horizon
@@ -45,7 +53,12 @@ class MPC:
         # TODO: write your code here
         # Initialize your planner with the relevant arguments.
         # Write different optimizers for cem and random actions respectively
-        raise NotImplementedError
+        if(not self.use_random_optimizer):
+            print("Using CEM Policy")
+            self.popsize = popsize
+            self.num_elites = num_elites
+            self.max_iters = max_iters
+            self.policy = CEMPolicy(self.action_dim,INITIAL_MU,INITIAL_SIGMA,self.plan_horizon,self.popsize,self.num_elites,self.max_iters)
 
     def obs_cost_fn(self, state):
         """ Cost function of the current state """

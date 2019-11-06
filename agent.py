@@ -1,4 +1,5 @@
 import numpy as np
+import ipdb
 
 
 class Agent:
@@ -44,6 +45,26 @@ class RandomPolicy:
 
     def reset(self):
         pass
+
+    def act(self, arg1, arg2):
+        return np.random.uniform(size=self.action_dim) * 2 - 1
+
+class CEMPolicy:
+    def __init__(self, action_dim,initial_mu_val,initial_sigma_val,plan_horizon,popsize, num_elites, max_iters):
+        self.action_dim = action_dim
+        self.initial_mu_val = initial_mu_val
+        self.initial_sigma_val = initial_sigma_val
+        self.plan_horizon = plan_horizon
+        self.popsize = popsize
+        self.num_elites = num_elites
+        self.max_iters = max_iters
+        self.mu,self.sigma = self.reset()
+
+    def reset(self):
+        mu = self.initial_mu_val*np.ones(self.action_dim)
+        sigma = self.initial_sigma_val*np.identity(self.action_dim)
+        ipdb.set_trace()
+        return mu,sigma
 
     def act(self, arg1, arg2):
         return np.random.uniform(size=self.action_dim) * 2 - 1

@@ -8,6 +8,8 @@ from agent import Agent, RandomPolicy
 from mpc import MPC
 from model import PENN
 
+import ipdb
+
 # Training params
 TASK_HORIZON = 40
 PLAN_HORIZON = 5
@@ -37,8 +39,8 @@ class ExperimentGTDynamics(object):
         mpc_params['use_gt_dynamics'] = True
         self.cem_policy = MPC(self.env, PLAN_HORIZON, None, POPSIZE, NUM_ELITES, MAX_ITERS, **mpc_params,
                               use_random_optimizer=False)
-        self.random_policy = MPC(self.env, PLAN_HORIZON, None, POPSIZE, NUM_ELITES, MAX_ITERS, **mpc_params,
-                                 use_random_optimizer=True)
+        # self.random_policy = MPC(self.env, PLAN_HORIZON, None, POPSIZE, NUM_ELITES, MAX_ITERS, **mpc_params,
+        #                          use_random_optimizer=True)
 
     def test(self, num_episodes, optimizer='cem'):
         samples = []
@@ -184,5 +186,5 @@ def train_pets():
 
 if __name__ == "__main__":
     test_cem_gt_dynamics(50)
-    train_single_dynamics(50)
-    train_pets()
+    # train_single_dynamics(50)
+    # train_pets()
