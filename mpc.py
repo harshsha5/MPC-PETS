@@ -58,7 +58,7 @@ class MPC:
             self.popsize = popsize
             self.num_elites = num_elites
             self.max_iters = max_iters
-            self.policy = CEMPolicy(self.action_dim,INITIAL_MU,INITIAL_SIGMA,self.plan_horizon,self.popsize,self.num_elites,self.max_iters)
+            self.policy = CEMPolicy(self.action_dim,INITIAL_MU,INITIAL_SIGMA,self.plan_horizon,self.popsize,self.num_elites,self.max_iters,self.ac_ub,self.ac_lb)
 
     def obs_cost_fn(self, state):
         """ Cost function of the current state """
