@@ -40,14 +40,59 @@ class Agent:
 
 
 class RandomPolicy:
-    def __init__(self, action_dim):
+    ''' For RandomPolicy, we can actually generate the trajectory for the entire time horizon; but just so that it stays in sync with MPC we only
+        generate trajectory for the plan_horizon. Also, mu and sigmas are not updated. We continue to use the initial_mu_val,initial_sigma_val
+    '''
+    def __init__(self,env,action_dim,initial_mu_val,initial_sigma_val,plan_horizon,popsize,max_iters,action_upper_bound,action_lower_bound,use_gt_dynamics):
+        print("Using random policy")
+        self.env = env
         self.action_dim = action_dim
+        self.initial_mu_val = initial_mu_val
+        self.initial_sigma_val = initial_sigma_val
+        self.plan_horizon = plan_horizon
+        self.total_population = popsize*max_iters
+        self.action_upper_bound = action_upper_bound
+        self.action_lower_bound = action_lower_bound
+        self.use_gt_dynamics = use_gt_dynamics
+        self.mu,self.sigma = self.reset()
+        self.action_list = []
+        self.goal = []
 
     def reset(self):
-        pass
+        mu = self.initial_mu_val*np.ones((self.plan_horizon,self.action_dim))
+        sigma = self.initial_sigma_val*np.ones((self.plan_horizon,self.action_dim)) #using a simplified notation of (sigma1,sigma2) for each time step instead of np.identity*self.initial_sigma_val per time_step
+        return mu,sigma
 
-    def act(self, arg1, arg2):
-        return np.random.uniform(size=self.action_dim) * 2 - 1
+    def train(self,present_state):
+        action_sequences = generate_action_sequences(self.mu,self.sigma,self.plan_horizon,self.total_population,self.action_upper_bound,self.action_lower_bound)
+        states = [present_state[:8]] * action_sequences.shape[2]
+        cost = np.zeros(self.total_population)
+        trajectories = np.asarray(states)
+        if(self.use_gt_dynamics):
+            for k in range(self.plan_horizon):
+                states = predict_next_state_gt(states,action_sequences[k,:,:],self.total_population,self.env)
+                trajectories = np.dstack((trajectories,np.asarray(states))) #Each trajectory is stored as depth
+                for p in range(self.total_population):
+                    cost[p] += cost_fn(states[p],self.goal)
+            best_trajectory = action_sequences[:,:,np.argmin(cost)]
+        return best_trajectory
+
+    def act(self,state, present_timestep):
+        if(present_timestep==0):
+            self.goal = state[[-2, -1]]
+            print(self.goal)
+
+        if(present_timestep%self.plan_horizon==0):
+            # print("Training new action list ", present_timestep)
+            self.action_list.clear()
+            best_trajectory = self.train(state)
+            for i in range(self.plan_horizon):
+                self.action_list.append(best_trajectory[i,:].tolist())
+            return self.action_list[0]
+        else:
+            # print("Using old action list ",present_timestep)
+            return self.action_list[present_timestep%self.plan_horizon]           
+        # return np.random.uniform(size=self.action_dim) * 2 - 1
 
 def cost_fn(state,goal):
     """ Cost function of the current state """
@@ -78,6 +123,13 @@ def generate_action_sequences(mu,sigma,plan_horizon,population_size,action_upper
 
     return action_sequences
 
+def predict_next_state_gt(states, actions, popsize, env):
+    """ Given a list of state action pairs, use the ground truth dynamics to predict the next state"""
+    new_states = []
+    for i in range(popsize):
+        new_states.append((env.get_nxt_state(np.asarray(states[i]),actions[:,i]).tolist()))
+    return new_states
+
 class CEMPolicy:
     def __init__(self,env,action_dim,initial_mu_val,initial_sigma_val,plan_horizon,popsize,num_elites,max_iters,action_upper_bound,action_lower_bound,use_gt_dynamics):
         self.env = env
@@ -98,9 +150,6 @@ class CEMPolicy:
     def reset(self):
         mu = self.initial_mu_val*np.ones((self.plan_horizon,self.action_dim))
         sigma = self.initial_sigma_val*np.ones((self.plan_horizon,self.action_dim)) #using a simplified notation of (sigma1,sigma2) for each time step instead of np.identity*self.initial_sigma_val per time_step
-        # goal = self.env.reset()
-        # goal = goal[[-2, -1]]
-        # ipdb.set_trace()
         return mu,sigma
 
     def predict_next_state_model(self, states, actions):
@@ -108,13 +157,13 @@ class CEMPolicy:
         # TODO: write your code here
         raise NotImplementedError
 
-    def predict_next_state_gt(self, states, actions):
-        """ Given a list of state action pairs, use the ground truth dynamics to predict the next state"""
-        # TODO: write your code here
-        new_states = []
-        for i in range(self.popsize):
-            new_states.append((self.env.get_nxt_state(np.asarray(states[i]),actions[:,i]).tolist()))
-        return new_states
+    # def predict_next_state_gt(self, states, actions):
+    #     """ Given a list of state action pairs, use the ground truth dynamics to predict the next state"""
+    #     # TODO: write your code here
+    #     new_states = []
+    #     for i in range(self.popsize):
+    #         new_states.append((self.env.get_nxt_state(np.asarray(states[i]),actions[:,i]).tolist()))
+    #     return new_states
 
     def train(self,present_state):
         for i in range(self.max_iters):
@@ -124,7 +173,7 @@ class CEMPolicy:
             trajectories = np.asarray(states)
             if(self.use_gt_dynamics):
                 for k in range(self.plan_horizon):
-                    states = self.predict_next_state_gt(states,action_sequences[k,:,:])
+                    states = predict_next_state_gt(states,action_sequences[k,:,:],self.popsize,self.env)
                     trajectories = np.dstack((trajectories,np.asarray(states))) #Each trajectory is stored as depth
                     for p in range(self.popsize):
                         cost[p] += cost_fn(states[p],self.goal)
