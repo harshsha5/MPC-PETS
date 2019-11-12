@@ -7,8 +7,8 @@ import copy
 from agent import Agent, RandomPolicy, CEMPolicy
 import ipdb
 
-INITIAL_MU = 0
-INITIAL_SIGMA = 0.5
+# INITIAL_MU = 0
+# INITIAL_SIGMA = 0.5
 
 
 class MPC:
@@ -58,26 +58,27 @@ class MPC:
             self.popsize = popsize
             self.num_elites = num_elites
             self.max_iters = max_iters
-            self.policy = CEMPolicy(self.action_dim,INITIAL_MU,INITIAL_SIGMA,self.plan_horizon,self.popsize,self.num_elites,self.max_iters,self.ac_ub,self.ac_lb)
+            self.policy = CEMPolicy(self.env,self.action_dim,INITIAL_MU,INITIAL_SIGMA,self.plan_horizon,self.popsize,self.num_elites,self.max_iters,self.ac_ub,self.ac_lb,self.use_gt_dynamics)
+            # self.policy.train()
 
-    def obs_cost_fn(self, state):
-        """ Cost function of the current state """
-        # Weights for different terms
-        W_PUSHER = 1
-        W_GOAL = 2
-        W_DIFF = 5
+    # def obs_cost_fn(self, state):
+    #     """ Cost function of the current state """
+    #     # Weights for different terms
+    #     W_PUSHER = 1
+    #     W_GOAL = 2
+    #     W_DIFF = 5
 
-        pusher_x, pusher_y = state[0], state[1]
-        box_x, box_y = state[2], state[3]
-        goal_x, goal_y = self.goal[0], self.goal[1]
+    #     pusher_x, pusher_y = state[0], state[1]
+    #     box_x, box_y = state[2], state[3]
+    #     goal_x, goal_y = self.goal[0], self.goal[1]
 
-        pusher_box = np.array([box_x - pusher_x, box_y - pusher_y])
-        box_goal = np.array([goal_x - box_x, goal_y - box_y])
-        d_box = np.sqrt(np.dot(pusher_box, pusher_box))
-        d_goal = np.sqrt(np.dot(box_goal, box_goal))
-        diff_coord = np.abs(box_x / box_y - goal_x / goal_y)
-        # the -0.4 is to adjust for the radius of the box and pusher
-        return W_PUSHER * np.max(d_box - 0.4, 0) + W_GOAL * d_goal + W_DIFF * diff_coord
+    #     pusher_box = np.array([box_x - pusher_x, box_y - pusher_y])
+    #     box_goal = np.array([goal_x - box_x, goal_y - box_y])
+    #     d_box = np.sqrt(np.dot(pusher_box, pusher_box))
+    #     d_goal = np.sqrt(np.dot(box_goal, box_goal))
+    #     diff_coord = np.abs(box_x / box_y - goal_x / goal_y)
+    #     # the -0.4 is to adjust for the radius of the box and pusher
+    #     return W_PUSHER * np.max(d_box - 0.4, 0) + W_GOAL * d_goal + W_DIFF * diff_coord
 
     def predict_next_state_model(self, states, actions):
         """ Given a list of state action pairs, use the learned model to predict the next state"""
@@ -103,6 +104,8 @@ class MPC:
 
     def reset(self):
         # TODO: write your code here
+        print("Resetting MPC policy")
+        self.policy.reset()
         raise NotImplementedError
 
     def act(self, state, t):
@@ -114,6 +117,7 @@ class MPC:
           t: current timestep
         """
         # TODO: write your code here
+        print("Acting accordin to MPC policy")
         raise NotImplementedError
 
     # TODO: write any helper functions that you need
