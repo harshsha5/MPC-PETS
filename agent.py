@@ -139,12 +139,12 @@ class CEMPolicy:
             print(self.goal)
 
         if(present_timestep%self.plan_horizon==0):
-            print("Training new action list ", present_timestep)
+            # print("Training new action list ", present_timestep)
             self.action_list.clear()
             mu = self.train(state)
             for i in range(self.plan_horizon):
                 self.action_list.append(mu[i,:].tolist())
             return self.action_list[0]
         else:
-            print("Using old action list ",present_timestep)
+            # print("Using old action list ",present_timestep)
             return self.action_list[present_timestep%self.plan_horizon]
