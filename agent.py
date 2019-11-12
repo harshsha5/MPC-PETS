@@ -44,7 +44,6 @@ class RandomPolicy:
         generate trajectory for the plan_horizon. Also, mu and sigmas are not updated. We continue to use the initial_mu_val,initial_sigma_val
     '''
     def __init__(self,env,action_dim,initial_mu_val,initial_sigma_val,plan_horizon,popsize,max_iters,action_upper_bound,action_lower_bound,use_gt_dynamics):
-        print("Using random policy")
         self.env = env
         self.action_dim = action_dim
         self.initial_mu_val = initial_mu_val

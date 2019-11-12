@@ -46,6 +46,9 @@ class MPC:
         self.initial_sigma = initial_sigma
         self.initial_mu = initial_mu
 
+        self.popsize = popsize
+        self.max_iters = max_iters
+
         # Set up optimizer
         self.model = model
 
@@ -60,30 +63,11 @@ class MPC:
         # Write different optimizers for cem and random actions respectively
         if(not self.use_random_optimizer):
             print("Using CEM Policy")
-            self.popsize = popsize
             self.num_elites = num_elites
-            self.max_iters = max_iters
             self.policy = CEMPolicy(self.env,self.action_dim,self.initial_mu,self.initial_sigma,self.plan_horizon,self.popsize,self.num_elites,self.max_iters,self.ac_ub,self.ac_lb,self.use_gt_dynamics)
-            # self.policy.train()
-
-    # def obs_cost_fn(self, state):
-    #     """ Cost function of the current state """
-    #     # Weights for different terms
-    #     W_PUSHER = 1
-    #     W_GOAL = 2
-    #     W_DIFF = 5
-
-    #     pusher_x, pusher_y = state[0], state[1]
-    #     box_x, box_y = state[2], state[3]
-    #     goal_x, goal_y = self.goal[0], self.goal[1]
-
-    #     pusher_box = np.array([box_x - pusher_x, box_y - pusher_y])
-    #     box_goal = np.array([goal_x - box_x, goal_y - box_y])
-    #     d_box = np.sqrt(np.dot(pusher_box, pusher_box))
-    #     d_goal = np.sqrt(np.dot(box_goal, box_goal))
-    #     diff_coord = np.abs(box_x / box_y - goal_x / goal_y)
-    #     # the -0.4 is to adjust for the radius of the box and pusher
-    #     return W_PUSHER * np.max(d_box - 0.4, 0) + W_GOAL * d_goal + W_DIFF * diff_coord
+        else:
+            print("Using Random Policy")
+            self.policy = RandomPolicy(self.env,self.action_dim,self.initial_mu,self.initial_sigma,self.plan_horizon,self.popsize,self.max_iters,self.ac_ub, self.ac_lb,self.use_gt_dynamics)
 
     def predict_next_state_model(self, states, actions):
         """ Given a list of state action pairs, use the learned model to predict the next state"""
@@ -123,10 +107,10 @@ class MPC:
         if(present_timestep==0):
             self.policy.goal = state[[-2, -1]]
 
-        if(not self.use_random_optimizer):
+        if(self.use_random_optimizer):
+            best_trajectory = self.policy.train(state)
+            return best_trajectory[0,:].tolist()
+        else:
             mu = self.policy.train(state)
             self.policy.mu = np.vstack((mu[1:,:],np.zeros((1,self.action_dim))))
             return mu[0,:].tolist()
-
-
-    # TODO: write any helper functions that you need
