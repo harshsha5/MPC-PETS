@@ -13,6 +13,8 @@ import ipdb
 
 class MPC:
     def __init__(self, env, plan_horizon, model, popsize, num_elites, max_iters,
+                 initial_mu,
+                 initial_sigma,
                  num_particles=6,
                  use_gt_dynamics=True,
                  use_mpc=True,
@@ -41,6 +43,9 @@ class MPC:
         self.state_dim, self.action_dim = 8, env.action_space.shape[0]
         self.ac_ub, self.ac_lb = env.action_space.high, env.action_space.low
 
+        self.initial_sigma = initial_sigma
+        self.initial_mu = initial_mu
+
         # Set up optimizer
         self.model = model
 
@@ -58,7 +63,7 @@ class MPC:
             self.popsize = popsize
             self.num_elites = num_elites
             self.max_iters = max_iters
-            self.policy = CEMPolicy(self.env,self.action_dim,INITIAL_MU,INITIAL_SIGMA,self.plan_horizon,self.popsize,self.num_elites,self.max_iters,self.ac_ub,self.ac_lb,self.use_gt_dynamics)
+            self.policy = CEMPolicy(self.env,self.action_dim,self.initial_mu,self.initial_sigma,self.plan_horizon,self.popsize,self.num_elites,self.max_iters,self.ac_ub,self.ac_lb,self.use_gt_dynamics)
             # self.policy.train()
 
     # def obs_cost_fn(self, state):
@@ -106,18 +111,22 @@ class MPC:
         # TODO: write your code here
         print("Resetting MPC policy")
         self.policy.reset()
-        raise NotImplementedError
 
-    def act(self, state, t):
+    def act(self, state, present_timestep):
         """
         Use model predictive control to find the action give current state.
 
         Arguments:
           state: current state
-          t: current timestep
+          present_timestep: current timestep
         """
-        # TODO: write your code here
-        print("Acting accordin to MPC policy")
-        raise NotImplementedError
+        if(present_timestep==0):
+            self.policy.goal = state[[-2, -1]]
+
+        if(not self.use_random_optimizer):
+            mu = self.policy.train(state)
+            self.policy.mu = np.vstack((mu[1:,:],np.zeros((1,self.action_dim))))
+            return mu[0,:].tolist()
+
 
     # TODO: write any helper functions that you need
